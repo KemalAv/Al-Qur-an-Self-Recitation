@@ -1,7 +1,7 @@
 
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Surah, Ayah, Mistake } from '../types';
-import { BackIcon } from './icons';
+import { BackIcon, PlayIcon, PauseIcon } from './icons';
 import { useDisplaySettings } from '../hooks/useTheme';
 
 interface AnalysisViewProps {
@@ -27,6 +27,43 @@ const cleanArabicText = (text: string) => text.replace(/[\u06d6-\u06dc\u06de]/g,
 
 const AnalysisView: React.FC<AnalysisViewProps> = ({ title, ayahs, mistakes, onBack }) => {
     const { settings } = useDisplaySettings();
+    const [playingAyahKey, setPlayingAyahKey] = useState<number | null>(null);
+    const audioPlayer = useRef<HTMLAudioElement | null>(null);
+  
+    useEffect(() => {
+        audioPlayer.current = new Audio();
+        const player = audioPlayer.current;
+
+        const onEnded = () => setPlayingAyahKey(null);
+        const onPause = () => {
+            // Only nullify if it's not being replaced by another track
+            if (player.src === audioPlayer.current?.src) {
+                 setPlayingAyahKey(null);
+            }
+        };
+        
+        player.addEventListener('ended', onEnded);
+        player.addEventListener('pause', onPause);
+
+        return () => {
+            player.pause();
+            player.removeEventListener('ended', onEnded);
+            player.removeEventListener('pause', onPause);
+        };
+    }, []);
+
+    const togglePlay = (ayah: Ayah) => {
+        const player = audioPlayer.current;
+        if (!player || !ayah.audio) return;
+
+        if (playingAyahKey === ayah.numberInQuran) {
+            player.pause();
+        } else {
+            player.src = ayah.audio;
+            player.play().catch(e => console.error("Audio play failed", e));
+            setPlayingAyahKey(ayah.numberInQuran);
+        }
+    };
     
     return (
         <div className="flex flex-col h-screen">
@@ -103,11 +140,27 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ title, ayahs, mistakes, onB
                                         {ayah.transliteration}
                                     </p>
                                 )}
-                                {settings.showTranslation && (
-                                    <p className={`mt-3 text-gray-600 dark:text-gray-300 ${TRANSLATION_FONT_SIZES[settings.translationFontSize]}`}>
-                                        {ayah.number}. {ayah.translation}
-                                    </p>
-                                )}
+                                <div className="flex justify-between items-center mt-3">
+                                    {settings.showTranslation ? (
+                                        <p className={`text-gray-600 dark:text-gray-300 ${TRANSLATION_FONT_SIZES[settings.translationFontSize]} flex-grow pr-4`}>
+                                            {ayah.number}. {ayah.translation}
+                                        </p>
+                                    ) : <div className="flex-grow"></div>}
+
+                                    {ayah.audio && (
+                                        <button
+                                            onClick={() => togglePlay(ayah)}
+                                            className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-dark-surface transition-colors flex-shrink-0"
+                                            aria-label={playingAyahKey === ayah.numberInQuran ? 'Pause audio' : 'Play audio'}
+                                        >
+                                            {playingAyahKey === ayah.numberInQuran ? (
+                                                <PauseIcon className="w-6 h-6 text-blue-500" />
+                                            ) : (
+                                                <PlayIcon className="w-6 h-6" />
+                                            )}
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         );
                     })}
