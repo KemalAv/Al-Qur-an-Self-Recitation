@@ -4,6 +4,7 @@ import { BackIcon, ReadIcon, SettingsIcon, SpeakerIcon, PauseIcon } from './icon
 import MemorizationSummaryModal from './MemorizationSummaryModal';
 import DisplaySettingsModal from './DisplaySettingsModal';
 import { useDisplaySettings } from '../hooks/useTheme';
+import { useLocalization } from '../hooks/useLocalization';
 
 const ARABIC_FONT_SIZES = ['text-xl md:text-2xl', 'text-2xl md:text-3xl', 'text-3xl md:text-4xl', 'text-4xl md:text-5xl', 'text-5xl md:text-6xl', 'text-6xl md:text-7xl'];
 const TRANSLATION_FONT_SIZES = ['text-xs', 'text-sm', 'text-base', 'text-lg', 'text-xl', 'text-2xl'];
@@ -29,6 +30,8 @@ const toArabicNumeral = (n: number): string => {
 };
 
 const MemorizationView: React.FC<MemorizationViewProps> = ({ ayahs, startAyah, juzNumber, isJuzMode, onBack, onSwitchToReading, onStartAnalysis }) => {
+  const { t } = useLocalization();
+  
   const getInitialIndex = useMemo(() => () => {
     const hasPreamble = ayahs[0]?.number === 0;
     if (isJuzMode) return 0;
@@ -220,7 +223,7 @@ const MemorizationView: React.FC<MemorizationViewProps> = ({ ayahs, startAyah, j
               <h1 className="text-xl font-bold">{currentAyah.surah.englishName}</h1>
               <p className="text-gray-500 dark:text-gray-400">
                 {isJuzMode ? `Juz ${juzNumber} | ` : ''}
-                {currentAyah.number === 0 ? 'Opening' : `Verse ${displayedAyahNumber}`}
+                {currentAyah.number === 0 ? t('opening') : `${t('verse')} ${displayedAyahNumber}`}
               </p>
           </div>
           <div className="flex items-center space-x-2">
@@ -232,10 +235,10 @@ const MemorizationView: React.FC<MemorizationViewProps> = ({ ayahs, startAyah, j
             >
                 {isAudioPlaying ? <PauseIcon className="w-6 h-6 text-blue-500" /> : <SpeakerIcon className="w-6 h-6" />}
             </button>
-            <button onClick={() => setSettingsModalOpen(true)} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-dark-surface" title="Display Settings">
+            <button onClick={() => setSettingsModalOpen(true)} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-dark-surface" title={t('settingsTitle')}>
                 <SettingsIcon className="w-6 h-6"/>
             </button>
-            <button onClick={onSwitchToReading} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-dark-surface" title="Switch to Reading Mode">
+            <button onClick={onSwitchToReading} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-dark-surface" title={t('switchToReading')}>
                 <ReadIcon className="w-6 h-6"/>
             </button>
           </div>
@@ -244,11 +247,11 @@ const MemorizationView: React.FC<MemorizationViewProps> = ({ ayahs, startAyah, j
       {sessionStarted && currentAyah.number !== 0 && (
         <div className="flex-shrink-0 p-2 flex justify-around text-center border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-dark-surface shadow-retro-inner">
             <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">🔴 Forgot</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">🔴 {t('forgot')}</p>
                 <p className="text-xl font-bold">{forgotCount}</p>
             </div>
             <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">🟡 Mistake</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">🟡 {t('mistake')}</p>
                 <p className="text-xl font-bold">{tajwidCount}</p>
             </div>
         </div>
@@ -307,7 +310,7 @@ const MemorizationView: React.FC<MemorizationViewProps> = ({ ayahs, startAyah, j
          {shouldShowStartScreen ? (
              <div className="p-4 bg-gray-100 dark:bg-dark-bg border-t-2 border-gray-200 dark:border-gray-800">
                   <button onClick={handleStartMemorization} className="w-full p-4 text-lg font-bold rounded-xl border border-green-700 bg-gradient-to-b from-green-400 to-green-600 text-white shadow-retro-lg hover:shadow-retro-xl transition-all transform hover:scale-[1.02]">
-                    Start Practice
+                    {t('startPractice')}
                 </button>
              </div>
          ) : (
@@ -318,25 +321,25 @@ const MemorizationView: React.FC<MemorizationViewProps> = ({ ayahs, startAyah, j
                         disabled={mistakeMarkedForWord}
                         className="p-3 text-base font-semibold rounded-lg border border-red-700 bg-gradient-to-b from-red-300 to-red-500 text-white shadow-retro-md hover:shadow-retro-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
                     >
-                        🔴 Forgot
+                        🔴 {t('forgot')}
                     </button>
                     <button 
                         onClick={() => addMistake('tajwid')}
                         disabled={mistakeMarkedForWord}
                         className="p-3 text-base font-semibold rounded-lg border border-yellow-600 bg-gradient-to-b from-yellow-300 to-yellow-500 text-white shadow-retro-md hover:shadow-retro-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
                     >
-                        🟡 Mistake
+                        🟡 {t('mistake')}
                     </button>
                     <button 
                         onClick={handleNextWord}
                         className="p-3 text-base font-semibold rounded-lg border border-blue-700 bg-gradient-to-b from-blue-400 to-blue-600 text-white shadow-retro-md hover:shadow-retro-lg transition-all transform hover:scale-105"
                     >
-                        {isLastWord ? 'Finish' : 'Next Word'}
+                        {isLastWord ? t('finish') : t('nextWord')}
                     </button>
                 </div>
                 <div className="text-center py-2 bg-gray-100 dark:bg-dark-bg">
                     <button onClick={endMemorizationSession} className="text-gray-500 dark:text-gray-400 hover:underline">
-                        End session early
+                        {t('endSessionEarly')}
                     </button>
                 </div>
             </>

@@ -1,3 +1,5 @@
+export type Language = 'en' | 'id' | 'es';
+
 export interface Surah {
   number: number;
   name: string;
@@ -22,10 +24,12 @@ export interface Ayah {
 export interface DisplaySettings {
     showTransliteration: boolean;
     showTranslation: boolean;
-    arabicFontSize: number; // Scale 0-4
-    translationFontSize: number; // Scale 0-4
-    transliterationFontSize: number; // Scale 0-4
+    arabicFontSize: number; // Scale 0-5
+    translationFontSize: number; // Scale 0-5
+    transliterationFontSize: number; // Scale 0-5
     reciter: string; // e.g. 'ar.alafasy'
+    language: Language;
+    translationIdentifier: string;
 }
 
 export interface Mistake {

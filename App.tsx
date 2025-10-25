@@ -7,30 +7,37 @@ import ReadingView from './components/ReadingView';
 import MemorizationView from './components/MemorizationView';
 import AnalysisView from './components/AnalysisView';
 import { ThemeProvider, useTheme, DisplaySettingsProvider, useDisplaySettings } from './hooks/useTheme';
+import { LocalizationProvider, useLocalization } from './hooks/useLocalization';
 import { Logo } from './components/Logo';
 
 type View = 'LIST_VIEW' | 'READING' | 'MEMORIZING' | 'ANALYSIS';
 
-const LoadingIndicator: React.FC = () => (
-    <div className="flex flex-col items-center justify-center h-screen" aria-live="polite" aria-busy="true">
-        <Logo className="w-20 h-20 text-blue-500 mb-6 animate-pulse" />
-        <div className="animate-spin rounded-full h-24 w-24 border-t-4 border-b-4 border-blue-500" role="status">
-            <span className="sr-only">Loading...</span>
+const LoadingIndicator: React.FC = () => {
+    const { t } = useLocalization();
+    return (
+        <div className="flex flex-col items-center justify-center h-screen" aria-live="polite" aria-busy="true">
+            <Logo className="w-20 h-20 text-blue-500 mb-6 animate-pulse" />
+            <div className="animate-spin rounded-full h-24 w-24 border-t-4 border-b-4 border-blue-500" role="status">
+                <span className="sr-only">{t('loading')}</span>
+            </div>
+            <p className="mt-4 text-lg font-semibold">{t('loading')}</p>
         </div>
-        <p className="mt-4 text-lg font-semibold">Loading data...</p>
-    </div>
-);
+    );
+};
 
-const ErrorDisplay: React.FC<{ message: string, onRetry: () => void }> = ({ message, onRetry }) => (
-    <div className="flex flex-col items-center justify-center h-screen text-center p-4">
-        <Logo className="w-24 h-24 text-red-400 mb-4" />
-        <h2 className="text-2xl font-bold text-red-500 mb-2">An Error Occurred</h2>
-        <p className="text-gray-600 dark:text-gray-300 mb-6 max-w-md">{message}</p>
-        <button onClick={onRetry} className="px-8 py-3 text-white rounded-lg hover:bg-blue-600 transition-colors font-semibold border border-blue-700 bg-gradient-to-b from-blue-400 to-blue-600 shadow-retro-md hover:shadow-retro-lg">
-            Try Again
-        </button>
-    </div>
-);
+const ErrorDisplay: React.FC<{ message: string, onRetry: () => void }> = ({ message, onRetry }) => {
+    const { t } = useLocalization();
+    return (
+        <div className="flex flex-col items-center justify-center h-screen text-center p-4">
+            <Logo className="w-24 h-24 text-red-400 mb-4" />
+            <h2 className="text-2xl font-bold text-red-500 mb-2">{t('errorOccurred')}</h2>
+            <p className="text-gray-600 dark:text-gray-300 mb-6 max-w-md">{message}</p>
+            <button onClick={onRetry} className="px-8 py-3 text-white rounded-lg hover:bg-blue-600 transition-colors font-semibold border border-blue-700 bg-gradient-to-b from-blue-400 to-blue-600 shadow-retro-md hover:shadow-retro-lg">
+                {t('tryAgain')}
+            </button>
+        </div>
+    );
+};
 
 const AppContent: React.FC = () => {
     const [view, setView] = useState<View>('LIST_VIEW');
@@ -43,6 +50,7 @@ const AppContent: React.FC = () => {
     const [analysisStats, setAnalysisStats] = useState<MemorizationStats | null>(null);
     const { theme, toggleTheme } = useTheme();
     const { settings } = useDisplaySettings();
+    const { t } = useLocalization();
     
     const isListView = view === 'LIST_VIEW';
 
@@ -61,14 +69,14 @@ const AppContent: React.FC = () => {
         setAyahsData(null);
     
         try {
-            const response = await fetch(`https://api.alquran.cloud/v1/surah/${surah.number}/editions/quran-uthmani,en.sahih,en.transliteration,${settings.reciter}`);
+            const response = await fetch(`https://api.alquran.cloud/v1/surah/${surah.number}/editions/quran-uthmani,${settings.translationIdentifier},en.transliteration,${settings.reciter}`);
             if (!response.ok) throw new Error(`Failed to load data from the server. Status: ${response.status}`);
             const apiResponse = await response.json();
     
             if (apiResponse.code !== 200 || !apiResponse.data) throw new Error('Invalid API response format.');
 
             const uthmaniEdition = apiResponse.data.find((e: any) => e.edition.identifier === 'quran-uthmani');
-            const translationEdition = apiResponse.data.find((e: any) => e.edition.identifier === 'en.sahih');
+            const translationEdition = apiResponse.data.find((e: any) => e.edition.identifier === settings.translationIdentifier);
             const transliterationEdition = apiResponse.data.find((e: any) => e.edition.identifier === 'en.transliteration');
             const audioEdition = apiResponse.data.find((e: any) => e.edition.identifier === settings.reciter);
         
@@ -121,7 +129,7 @@ const AppContent: React.FC = () => {
         setError(null);
         setAyahsData(null);
         try {
-            const editions = ['quran-uthmani', 'en.sahih', 'en.transliteration', settings.reciter];
+            const editions = ['quran-uthmani', settings.translationIdentifier, 'en.transliteration', settings.reciter];
             const responses = await Promise.all(
                 editions.map(edition => fetch(`https://api.alquran.cloud/v1/juz/${juz.number}/${edition}`))
             );
@@ -303,7 +311,7 @@ const AppContent: React.FC = () => {
             </main>
             {isListView && (
                 <footer className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 dark:bg-dark-surface/80 backdrop-blur-sm text-center text-sm text-gray-600 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700">
-                    InshaAllah, your support helps more people memorize the Qur’an 📖 → <a href="https://ko-fi.com/kemalavicennafaza" target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-500 hover:underline">ko-fi.com/kemalavicennafaza</a>
+                    {t('footerText')} <a href="https://ko-fi.com/kemalavicennafaza" target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-500 hover:underline">ko-fi.com/kemalavicennafaza</a>
                 </footer>
             )}
         </div>
@@ -313,7 +321,9 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => (
     <ThemeProvider>
         <DisplaySettingsProvider>
-            <AppContent />
+            <LocalizationProvider>
+                <AppContent />
+            </LocalizationProvider>
         </DisplaySettingsProvider>
     </ThemeProvider>
 );

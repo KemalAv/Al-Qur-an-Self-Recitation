@@ -1,8 +1,8 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Surah, Ayah, Mistake } from '../types';
 import { BackIcon, PlayIcon, PauseIcon } from './icons';
 import { useDisplaySettings } from '../hooks/useTheme';
+import { useLocalization } from '../hooks/useLocalization';
 
 interface AnalysisViewProps {
   title: string;
@@ -29,6 +29,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ title, ayahs, mistakes, onB
     const { settings } = useDisplaySettings();
     const [playingAyahKey, setPlayingAyahKey] = useState<number | null>(null);
     const audioPlayer = useRef<HTMLAudioElement | null>(null);
+    const { t } = useLocalization();
   
     useEffect(() => {
         audioPlayer.current = new Audio();
@@ -73,7 +74,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ title, ayahs, mistakes, onB
                 </button>
                 <div className="text-center">
                     <h1 className="text-xl font-bold">{title}</h1>
-                    <p className="text-gray-500 dark:text-gray-400">Review memorization mistakes</p>
+                    <p className="text-gray-500 dark:text-gray-400">{t('analysisTitle')}</p>
                 </div>
                 <div className="w-10"></div>
             </header>
@@ -83,11 +84,11 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ title, ayahs, mistakes, onB
                     <div className="flex justify-center space-x-6 p-4 rounded-lg bg-gray-100 dark:bg-dark-card border border-gray-200 dark:border-gray-700 shadow-retro-inner">
                         <div className="flex items-center space-x-2">
                             <span className="w-5 h-5 rounded-sm bg-red-200 border border-red-300"></span>
-                            <span className="font-medium">Forgot</span>
+                            <span className="font-medium">{t('forgotLabel')}</span>
                         </div>
                         <div className="flex items-center space-x-2">
                              <span className="w-5 h-5 rounded-sm bg-yellow-200 border border-yellow-300"></span>
-                            <span className="font-medium">Tajwid Mistake</span>
+                            <span className="font-medium">{t('tajwidMistakeLabel')}</span>
                         </div>
                     </div>
                     

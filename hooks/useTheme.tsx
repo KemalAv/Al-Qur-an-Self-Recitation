@@ -61,6 +61,8 @@ const defaultSettings: DisplaySettings = {
     translationFontSize: 2, // 0-5 scale, 2 is S
     transliterationFontSize: 2, // 0-5 scale, 2 is S
     reciter: 'ar.alafasy', // Default reciter
+    language: 'en', // Default language
+    translationIdentifier: 'en.sahih', // Default translation
 };
 
 

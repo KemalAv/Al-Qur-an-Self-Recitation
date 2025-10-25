@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { DisplaySettings } from '../types';
+import { DisplaySettings, Language } from '../types';
 import { useDisplaySettings } from '../hooks/useTheme';
+import { useLocalization } from '../hooks/useLocalization';
+import { languageOptions } from '../locales';
 
 interface DisplaySettingsModalProps {
   onClose: () => void;
@@ -33,15 +35,14 @@ const FontSizeControl: React.FC<{
 const DisplaySettingsModal: React.FC<DisplaySettingsModalProps> = ({ onClose }) => {
   const { settings: currentSettings, setSettings: applySettings } = useDisplaySettings();
   const [settings, setSettings] = useState<DisplaySettings>(currentSettings);
+  const { t } = useLocalization();
   
-  // Effect to handle if the saved reciter is no longer in the options
   useEffect(() => {
     const isReciterValid = RECITER_OPTIONS.some(option => option.id === settings.reciter);
     if (!isReciterValid) {
         setSettings(prev => ({ ...prev, reciter: RECITER_OPTIONS[0].id }));
     }
   }, [settings.reciter]);
-
 
   const handleToggle = (key: keyof DisplaySettings) => {
     setSettings(prev => ({ ...prev, [key]: !prev[key] }));
@@ -58,6 +59,18 @@ const DisplaySettingsModal: React.FC<DisplaySettingsModalProps> = ({ onClose }) 
   const handleReciterChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setSettings(prev => ({ ...prev, reciter: event.target.value }));
   };
+  
+  const handleLanguageChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const newLang = event.target.value as Language;
+    const option = languageOptions.find(opt => opt.value === newLang);
+    if (option) {
+        setSettings(prev => ({
+            ...prev,
+            language: option.value,
+            translationIdentifier: option.translationId,
+        }));
+    }
+  };
 
   const handleApply = () => {
     applySettings(settings);
@@ -65,14 +78,14 @@ const DisplaySettingsModal: React.FC<DisplaySettingsModalProps> = ({ onClose }) 
   };
 
   const settingsOptions: { key: keyof DisplaySettings, label: string, emoji: string }[] = [
-    { key: 'showTranslation', label: 'Translation', emoji: '🌍' },
-    { key: 'showTransliteration', label: 'Transliteration', emoji: '🔠' },
+    { key: 'showTranslation', label: t('translation'), emoji: '🌍' },
+    { key: 'showTransliteration', label: t('transliteration'), emoji: '🔠' },
   ];
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div className="bg-gradient-to-b from-white to-gray-100 dark:from-dark-card dark:to-dark-surface rounded-2xl p-6 shadow-retro-xl w-full max-w-sm border border-gray-300 dark:border-gray-700 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-2xl font-bold mb-6 text-center">🌐 Display Settings</h2>
+        <h2 className="text-2xl font-bold mb-6 text-center">🌐 {t('settingsTitle')}</h2>
         
         <div className="space-y-4">
           {settingsOptions.map(({ key, label, emoji }) => (
@@ -97,7 +110,24 @@ const DisplaySettingsModal: React.FC<DisplaySettingsModalProps> = ({ onClose }) 
 
         <hr className="my-6 border-gray-200 dark:border-gray-600" />
         
-        <h3 className="text-xl font-bold mb-4 text-center">🎙️ Reciter</h3>
+        <h3 className="text-xl font-bold mb-4 text-center">🌐 {t('language')}</h3>
+        <div className="p-4 rounded-lg bg-gray-100 dark:bg-dark-surface border border-gray-200 dark:border-gray-600 shadow-retro-inner">
+            <select
+              value={settings.language}
+              onChange={handleLanguageChange}
+              className="w-full p-3 border-2 border-gray-300 dark:border-gray-500 rounded-lg bg-white dark:bg-dark-surface focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {languageOptions.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+        </div>
+
+        <hr className="my-6 border-gray-200 dark:border-gray-600" />
+        
+        <h3 className="text-xl font-bold mb-4 text-center">🎙️ {t('reciter')}</h3>
         <div className="p-4 rounded-lg bg-gray-100 dark:bg-dark-surface border border-gray-200 dark:border-gray-600 shadow-retro-inner">
             <select
               value={settings.reciter}
@@ -114,22 +144,22 @@ const DisplaySettingsModal: React.FC<DisplaySettingsModalProps> = ({ onClose }) 
         
         <hr className="my-6 border-gray-200 dark:border-gray-600" />
 
-        <h3 className="text-xl font-bold mb-4 text-center">📏 Font Size</h3>
+        <h3 className="text-xl font-bold mb-4 text-center">📏 {t('fontSize')}</h3>
         <div className="space-y-4 p-4 rounded-lg bg-gray-100 dark:bg-dark-surface border border-gray-200 dark:border-gray-600 shadow-retro-inner">
             <FontSizeControl 
-                label="Arabic Text"
+                label={t('arabicText')}
                 value={settings.arabicFontSize}
                 onDecrease={() => handleFontSizeChange('arabicFontSize', -1)}
                 onIncrease={() => handleFontSizeChange('arabicFontSize', 1)}
             />
             <FontSizeControl 
-                label="Translation"
+                label={t('translation')}
                 value={settings.translationFontSize}
                 onDecrease={() => handleFontSizeChange('translationFontSize', -1)}
                 onIncrease={() => handleFontSizeChange('translationFontSize', 1)}
             />
             <FontSizeControl 
-                label="Transliteration"
+                label={t('transliteration')}
                 value={settings.transliterationFontSize}
                 onDecrease={() => handleFontSizeChange('transliterationFontSize', -1)}
                 onIncrease={() => handleFontSizeChange('transliterationFontSize', 1)}
@@ -138,10 +168,10 @@ const DisplaySettingsModal: React.FC<DisplaySettingsModalProps> = ({ onClose }) 
 
         <div className="mt-8 flex space-x-4">
           <button onClick={onClose} className="w-full p-3 font-semibold rounded-lg bg-gradient-to-b from-gray-100 to-gray-300 dark:from-gray-600 dark:to-gray-800 border border-gray-400 dark:border-gray-500 shadow-retro-md hover:shadow-retro-lg transition">
-            Cancel
+            {t('cancel')}
           </button>
           <button onClick={handleApply} className="w-full p-3 font-semibold rounded-lg border border-blue-700 bg-gradient-to-b from-blue-400 to-blue-600 text-white shadow-retro-md hover:shadow-retro-lg transition">
-            Apply
+            {t('apply')}
           </button>
         </div>
       </div>

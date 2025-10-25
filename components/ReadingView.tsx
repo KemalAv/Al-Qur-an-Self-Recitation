@@ -3,6 +3,7 @@ import { Ayah } from '../types';
 import { BackIcon, SettingsIcon, MemorizeIcon, PlayIcon, PauseIcon } from './icons';
 import DisplaySettingsModal from './DisplaySettingsModal';
 import { useDisplaySettings } from '../hooks/useTheme';
+import { useLocalization } from '../hooks/useLocalization';
 
 interface ReadingViewProps {
   title: string;
@@ -27,6 +28,7 @@ const ReadingView: React.FC<ReadingViewProps> = ({ title, isJuzMode, ayahs, onBa
   const { settings } = useDisplaySettings();
   const [playingAyahKey, setPlayingAyahKey] = useState<number | null>(null);
   const audioPlayer = useRef<HTMLAudioElement | null>(null);
+  const { t } = useLocalization();
   
   // Track current surah for display in Juz mode
   let currentSurahName = '';
@@ -74,13 +76,13 @@ const ReadingView: React.FC<ReadingViewProps> = ({ title, isJuzMode, ayahs, onBa
           </button>
           <div className="text-center">
               <h1 className="text-xl font-bold">{title}</h1>
-              <p className="text-gray-500 dark:text-gray-400">Reading Mode</p>
+              <p className="text-gray-500 dark:text-gray-400">{t('readingMode')}</p>
           </div>
           <div className="flex items-center space-x-2">
-            <button onClick={() => setSettingsModalOpen(true)} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-dark-surface" title="Display Settings">
+            <button onClick={() => setSettingsModalOpen(true)} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-dark-surface" title={t('settingsTitle')}>
                 <SettingsIcon className="w-6 h-6"/>
             </button>
-            <button onClick={onSwitchToMemorization} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-dark-surface" title="Switch to Memorization Mode">
+            <button onClick={onSwitchToMemorization} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-dark-surface" title={t('switchToMemorization')}>
                 <MemorizeIcon className="w-6 h-6"/>
             </button>
           </div>
