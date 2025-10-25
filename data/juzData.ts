@@ -1,0 +1,35 @@
+
+import { Juz } from '../types';
+
+export const JUZS: Juz[] = [
+  { number: 1, name: "Juz 1" },
+  { number: 2, name: "Juz 2" },
+  { number: 3, name: "Juz 3" },
+  { number: 4, name: "Juz 4" },
+  { number: 5, name: "Juz 5" },
+  { number: 6, name: "Juz 6" },
+  { number: 7, name: "Juz 7" },
+  { number: 8, name: "Juz 8" },
+  { number: 9, name: "Juz 9" },
+  { number: 10, name: "Juz 10" },
+  { number: 11, name: "Juz 11" },
+  { number: 12, name: "Juz 12" },
+  { number: 13, name: "Juz 13" },
+  { number: 14, name: "Juz 14" },
+  { number: 15, name: "Juz 15" },
+  { number: 16, name: "Juz 16" },
+  { number: 17, name: "Juz 17" },
+  { number: 18, name: "Juz 18" },
+  { number: 19, name: "Juz 19" },
+  { number: 20, name: "Juz 20" },
+  { number: 21, name: "Juz 21" },
+  { number: 22, name: "Juz 22" },
+  { number: 23, name: "Juz 23" },
+  { number: 24, name: "Juz 24" },
+  { number: 25, name: "Juz 25" },
+  { number: 26, name: "Juz 26" },
+  { number: 27, name: "Juz 27" },
+  { number: 28, name: "Juz 28" },
+  { number: 29, name: "Juz 29" },
+  { number: 30, name: "Juz 30" }
+];
