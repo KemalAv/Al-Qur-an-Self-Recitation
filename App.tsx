@@ -58,7 +58,7 @@ const AppContent: React.FC = () => {
     const bismillahPreambleTemplate: Omit<Ayah, 'surah' | 'numberInQuran'> = {
         number: 0,
         text: BISMILLAH_ARABIC,
-        translation: "In the name of Allah, the Entirely Merciful, the Especially Merciful.",
+        translation: t('basmalahTranslation'),
         transliteration: "Bismillāhir-raḥmānir-raḥīm",
         audio: ""
     };
@@ -82,26 +82,26 @@ const AppContent: React.FC = () => {
         
             if (!uthmaniEdition || !translationEdition || !transliterationEdition) throw new Error('API response does not contain the required text editions.');
 
-            let arabicAyahs = uthmaniEdition.ayahs;
-            const needsBismillahPreamble = surah.number !== 1 && surah.number !== 9;
             const finalAyahs: Ayah[] = [];
+            const needsBismillahPreamble = surah.number !== 1 && surah.number !== 9;
             
             if (needsBismillahPreamble) {
                 const bismillahAyah: Ayah = {
                     ...bismillahPreambleTemplate,
-                    numberInQuran: 0,
+                    numberInQuran: 0, // Unique key for preamble
                     surah: { number: surah.number, name: surah.name, englishName: surah.englishName }
                 };
-                if (arabicAyahs.length > surah.numberOfAyahs || arabicAyahs[0]?.text.startsWith(BISMILLAH_ARABIC)) {
-                    finalAyahs.push(bismillahAyah);
-                    if (arabicAyahs.length > surah.numberOfAyahs) {
-                        arabicAyahs = arabicAyahs.slice(1);
-                    } else {
-                         const correctedFirstAyah = { ...arabicAyahs[0] };
-                         correctedFirstAyah.text = correctedFirstAyah.text.substring(BISMILLAH_ARABIC.length).trim();
-                         arabicAyahs = [correctedFirstAyah, ...arabicAyahs.slice(1)];
-                    }
-                }
+                finalAyahs.push(bismillahAyah);
+            }
+
+            const arabicAyahs = uthmaniEdition.ayahs;
+            // The API sometimes includes Basmalah in the first verse of surahs that shouldn't have it as part of the verse.
+            // We need to clean it if it exists, since we're adding our own preamble.
+            // This doesn't apply to Al-Fatihah, where it's part of the verse.
+            if (surah.number !== 1 && arabicAyahs[0]?.text.startsWith(BISMILLAH_ARABIC)) {
+                const correctedFirstAyah = { ...arabicAyahs[0] };
+                correctedFirstAyah.text = correctedFirstAyah.text.substring(BISMILLAH_ARABIC.length).trim();
+                arabicAyahs[0] = correctedFirstAyah;
             }
 
             const surahAyahs = arabicAyahs.map((ayah: any, index: number) => ({

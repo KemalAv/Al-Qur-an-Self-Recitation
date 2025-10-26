@@ -33,11 +33,16 @@ const MemorizationView: React.FC<MemorizationViewProps> = ({ ayahs, startAyah, j
   const { t } = useLocalization();
   
   const getInitialIndex = useMemo(() => () => {
-    const hasPreamble = ayahs[0]?.number === 0;
-    if (isJuzMode) return 0;
-    if (hasPreamble && startAyah === 1) return 0;
-    const initialIndex = ayahs.findIndex(a => a.number === startAyah);
-    return initialIndex !== -1 ? initialIndex : 0;
+      // In Juz mode, always start from the beginning of the passed ayahs.
+      if (isJuzMode) return 0;
+      
+      // In Surah mode, if there's a preamble, always start the view there.
+      const hasPreamble = ayahs[0]?.number === 0;
+      if (hasPreamble) return 0;
+      
+      // If no preamble (Al-Fatihah, At-Tawbah), start at the requested verse.
+      const initialIndex = ayahs.findIndex(a => a.number === startAyah);
+      return initialIndex !== -1 ? initialIndex : 0;
   }, [ayahs, isJuzMode, startAyah]);
 
   const [currentAyahIndex, setCurrentAyahIndex] = useState(getInitialIndex());
@@ -57,18 +62,19 @@ const MemorizationView: React.FC<MemorizationViewProps> = ({ ayahs, startAyah, j
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
 
   useEffect(() => {
-    const isFirstAyahPreamble = ayahs[0]?.number === 0;
     const initialIndex = getInitialIndex();
-    const shouldShowStartScreenFirst = initialIndex === 0 && isFirstAyahPreamble;
-
     setCurrentAyahIndex(initialIndex);
+    
+    const hasPreamble = ayahs[0]?.number === 0;
+    // The start screen should be shown if the session begins with a preamble.
+    const shouldShowStartScreen = initialIndex === 0 && hasPreamble;
+
+    setSessionStarted(!shouldShowStartScreen);
     setCurrentWordIndex(0);
     setMistakes([]);
     setShowSummary(false);
     setSessionStats(null);
-    setSessionStarted(!shouldShowStartScreenFirst);
-
-    setTotalWordsInSession(shouldShowStartScreenFirst ? 0 : 1);
+    setTotalWordsInSession(shouldShowStartScreen ? 0 : 1);
   }, [ayahs, isJuzMode, startAyah, getInitialIndex]);
 
   useEffect(() => {
@@ -132,7 +138,31 @@ const MemorizationView: React.FC<MemorizationViewProps> = ({ ayahs, startAyah, j
   const transliterationWordsToShow = currentAyahWords.length > 0 ? Math.ceil(((currentWordIndex + 1) / currentAyahWords.length) * currentAyahTransliterationWords.length) : 0;
 
   const handleStartMemorization = () => {
-    setCurrentAyahIndex(1);
+    // If session has started and we are on a preamble screen, advance to the next verse.
+    if (sessionStarted) {
+        const nextAyahIndex = currentAyahIndex + 1;
+        if (nextAyahIndex < ayahs.length) {
+            setCurrentAyahIndex(nextAyahIndex);
+            setCurrentWordIndex(0);
+            setTotalWordsInSession(prev => prev + 1);
+        } else {
+            endMemorizationSession();
+        }
+        return;
+    }
+
+    // Original logic for the very first start.
+    const firstRealVerseIndex = ayahs.findIndex(a => a.number > 0);
+    let verseToStartIndex = firstRealVerseIndex !== -1 ? firstRealVerseIndex : 0;
+
+    if (!isJuzMode) {
+        const requestedStartIndex = ayahs.findIndex(a => a.number === startAyah);
+        if (requestedStartIndex !== -1) {
+            verseToStartIndex = requestedStartIndex;
+        }
+    }
+    
+    setCurrentAyahIndex(verseToStartIndex);
     setCurrentWordIndex(0);
     setMistakes([]);
     setTotalWordsInSession(1);
@@ -145,12 +175,21 @@ const MemorizationView: React.FC<MemorizationViewProps> = ({ ayahs, startAyah, j
     if (!isLastWordInAyah) {
       setCurrentWordIndex(prev => prev + 1);
       setTotalWordsInSession(prev => prev + 1);
-    } else if (currentAyahIndex < ayahs.length - 1) {
-      setCurrentAyahIndex(prev => prev + 1);
-      setCurrentWordIndex(0);
-      setTotalWordsInSession(prev => prev + 1);
     } else {
-      endMemorizationSession();
+      const nextAyahIndex = currentAyahIndex + 1;
+      
+      if (nextAyahIndex < ayahs.length) {
+          setCurrentAyahIndex(nextAyahIndex);
+          setCurrentWordIndex(0);
+          
+          // If the next ayah is a real verse, count its first word.
+          // If it's a preamble, the user will click "Start Practice" which will count the word.
+          if (ayahs[nextAyahIndex].number !== 0) {
+            setTotalWordsInSession(prev => prev + 1);
+          }
+      } else {
+          endMemorizationSession();
+      }
     }
   };
 
@@ -187,13 +226,13 @@ const MemorizationView: React.FC<MemorizationViewProps> = ({ ayahs, startAyah, j
     setShowSummary(false);
     setSessionStats(null);
     const initialIndex = getInitialIndex();
-    const isFirstAyahPreamble = ayahs[0]?.number === 0;
+    const hasPreamble = ayahs[0]?.number === 0;
     setCurrentAyahIndex(initialIndex);
     setCurrentWordIndex(0);
     setMistakes([]);
-    const shouldShowStartScreenFirst = initialIndex === 0 && isFirstAyahPreamble;
-    setSessionStarted(!shouldShowStartScreenFirst);
-    setTotalWordsInSession(shouldShowStartScreenFirst ? 0 : 1);
+    const shouldShowStartScreen = initialIndex === 0 && hasPreamble;
+    setSessionStarted(!shouldShowStartScreen);
+    setTotalWordsInSession(shouldShowStartScreen ? 0 : 1);
   };
 
   const toggleCurrentAyahAudio = () => {
@@ -210,7 +249,7 @@ const MemorizationView: React.FC<MemorizationViewProps> = ({ ayahs, startAyah, j
     }
   };
 
-  const shouldShowStartScreen = !sessionStarted;
+  const isPreambleScreen = !sessionStarted || (currentAyah && currentAyah.number === 0);
   const sessionTitle = isJuzMode ? `Juz ${juzNumber}` : ayahs.find(a => a.number !== 0)?.surah.englishName;
 
   return (
@@ -258,7 +297,7 @@ const MemorizationView: React.FC<MemorizationViewProps> = ({ ayahs, startAyah, j
       )}
 
       <div className="flex-grow flex flex-col items-center justify-start p-4 md:p-6 overflow-y-auto">
-        {shouldShowStartScreen ? (
+        {isPreambleScreen ? (
             <div className="text-center p-4 pt-8 md:pt-16">
                 <p dir="rtl" className={`font-arabic mb-8 ${ARABIC_FONT_SIZES[settings.arabicFontSize]}`} style={{ lineHeight: 2.0 }}>
                     {currentAyah.text}
@@ -307,7 +346,7 @@ const MemorizationView: React.FC<MemorizationViewProps> = ({ ayahs, startAyah, j
       </div>
 
       <footer className="flex-shrink-0">
-         {shouldShowStartScreen ? (
+         {isPreambleScreen ? (
              <div className="p-4 bg-gray-100 dark:bg-dark-bg border-t-2 border-gray-200 dark:border-gray-800">
                   <button onClick={handleStartMemorization} className="w-full p-4 text-lg font-bold rounded-xl border border-green-700 bg-gradient-to-b from-green-400 to-green-600 text-white shadow-retro-lg hover:shadow-retro-xl transition-all transform hover:scale-[1.02]">
                     {t('startPractice')}
