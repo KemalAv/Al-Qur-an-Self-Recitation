@@ -24,20 +24,33 @@ const MemorizationSummaryModal: React.FC<MemorizationSummaryModalProps> = ({ sta
     const N = stats.totalWords;
     if (N === 0) return 0;
 
-    const S = stats.tajwidCount; // Salah (Wrong)
-    const L = stats.forgotCount; // Lupa (Forgot)
-    const B = N - S - L;         // Benar (Correct)
+    const S = stats.tajwidCount; // Tajwid Mistake count
+    const L = stats.forgotCount; // Forgot Mistake count
 
-    if (B < 0) return 0;
+    // Define weights for different mistake types. Forgetting a word is more severe.
+    const forgotWeight = 1.0;
+    const tajwidWeight = 0.6;
 
-    const alpha = 1.5;
-    const beta = 2.0;
-    const gamma = 1.5;
+    // Calculate a single weighted mistake value.
+    const weightedMistakes = (L * forgotWeight) + (S * tajwidWeight);
 
-    const accuracyComponent = Math.pow(B / N, alpha);
-    const penaltyComponent = 1 - (beta * (S / N)) - (gamma * (L / N));
-    const effectivePenalty = Math.max(0, penaltyComponent);
-    const rawScore = N * accuracyComponent * effectivePenalty;
+    // If there are no mistakes, the score is perfect.
+    if (weightedMistakes === 0) {
+      return N;
+    }
+
+    const mistakeRatio = weightedMistakes / N;
+
+    // A "brutality" constant that determines the steepness of the score drop-off.
+    // This value is tuned to create a more aggressive penalty curve.
+    const brutalityFactor = 50;
+
+    // The score decays exponentially based on the mistake ratio.
+    // This creates a "brutal" system where penalties accelerate as mistakes increase.
+    const scoreMultiplier = Math.exp(-brutalityFactor * mistakeRatio);
+    
+    const rawScore = N * scoreMultiplier;
+    
     return Math.round(rawScore);
   };
 
