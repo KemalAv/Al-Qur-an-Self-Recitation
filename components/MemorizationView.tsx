@@ -11,8 +11,8 @@ const TRANSLATION_FONT_SIZES = ['text-xs', 'text-sm', 'text-base', 'text-lg', 't
 const TRANSLITERATION_FONT_SIZES = ['text-[10px]', 'text-xs', 'text-sm', 'text-base', 'text-lg', 'text-xl'];
 
 
-// Function to remove Arabic waqf (pause) marks
-const cleanArabicText = (text: string) => text.replace(/[\u06d6-\u06dc\u06de]/g, '');
+// Function to remove Arabic waqf (pause) marks and other annotations, including lam-alif ligatures
+const cleanArabicText = (text: string) => text.replace(/[\u0610-\u061A\u06d6-\u06dc\u06de-\u06e8\uFEF5-\uFEFC]/g, '');
 
 interface MemorizationViewProps {
   ayahs: Ayah[];
@@ -27,6 +27,14 @@ interface MemorizationViewProps {
 const toArabicNumeral = (n: number): string => {
     const arabicNumerals = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
     return String(n).split('').map(digit => arabicNumerals[parseInt(digit)]).join('');
+};
+
+const getWordsForAyah = (ayah: Ayah): string[] => {
+    if (!ayah?.text) return [];
+    const marksRegex = /([\u0610-\u061A\u06d6-\u06dc\u06de-\u06e8\uFEF5-\uFEFC])/g;
+    const textWithSpaces = ayah.text.replace(marksRegex, ' $1 ');
+    const originalWords = textWithSpaces.split(' ').filter(Boolean);
+    return originalWords.filter(word => cleanArabicText(word).trim().length > 0);
 };
 
 const MemorizationView: React.FC<MemorizationViewProps> = ({ ayahs, startAyah, juzNumber, isJuzMode, onBack, onSwitchToReading, onStartAnalysis }) => {
@@ -49,6 +57,10 @@ const MemorizationView: React.FC<MemorizationViewProps> = ({ ayahs, startAyah, j
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [mistakes, setMistakes] = useState<Mistake[]>([]);
   const [totalWordsInSession, setTotalWordsInSession] = useState(0);
+
+  const [furthestAyahIndex, setFurthestAyahIndex] = useState(getInitialIndex());
+  const [furthestWordIndex, setFurthestWordIndex] = useState(0);
+  const [sessionStartIndex, setSessionStartIndex] = useState(getInitialIndex());
   
   const [showSummary, setShowSummary] = useState(false);
   const [sessionStats, setSessionStats] = useState<MemorizationStats | null>(null);
@@ -74,6 +86,9 @@ const MemorizationView: React.FC<MemorizationViewProps> = ({ ayahs, startAyah, j
     setMistakes([]);
     setShowSummary(false);
     setSessionStats(null);
+    setFurthestAyahIndex(initialIndex);
+    setFurthestWordIndex(0);
+    setSessionStartIndex(initialIndex);
     setTotalWordsInSession(shouldShowStartScreen ? 0 : 1);
   }, [ayahs, isJuzMode, startAyah, getInitialIndex]);
 
@@ -106,7 +121,10 @@ const MemorizationView: React.FC<MemorizationViewProps> = ({ ayahs, startAyah, j
   const { displayStructure, logicWords } = useMemo(() => {
     if (!currentAyah?.text) return { displayStructure: [], logicWords: [] };
     
-    const originalWords = currentAyah.text.split(' ').filter(Boolean);
+    const marksRegex = /([\u0610-\u061A\u06d6-\u06dc\u06de-\u06e8\uFEF5-\uFEFC])/g;
+    const textWithSpaces = currentAyah.text.replace(marksRegex, ' $1 ');
+    const originalWords = textWithSpaces.split(' ').filter(Boolean);
+
     const logicWords: string[] = [];
     const displayStructure: { type: 'word' | 'waqf'; text: string; logicIndex: number }[] = [];
     let currentLogicIndex = -1; // Starts at -1 so first word is 0, and any preceding waqf is visible with it.
@@ -145,6 +163,8 @@ const MemorizationView: React.FC<MemorizationViewProps> = ({ ayahs, startAyah, j
             setCurrentAyahIndex(nextAyahIndex);
             setCurrentWordIndex(0);
             setTotalWordsInSession(prev => prev + 1);
+            setFurthestAyahIndex(nextAyahIndex);
+            setFurthestWordIndex(0);
         } else {
             endMemorizationSession();
         }
@@ -167,34 +187,61 @@ const MemorizationView: React.FC<MemorizationViewProps> = ({ ayahs, startAyah, j
     setMistakes([]);
     setTotalWordsInSession(1);
     setSessionStarted(true);
+    setFurthestAyahIndex(verseToStartIndex);
+    setFurthestWordIndex(0);
+    setSessionStartIndex(verseToStartIndex);
   };
 
   const handleNextWord = () => {
+    const isAtFurthestProgress = currentAyahIndex === furthestAyahIndex && currentWordIndex === furthestWordIndex;
     const isLastWordInAyah = currentWordIndex >= currentAyahWords.length - 1;
 
     if (!isLastWordInAyah) {
-      setCurrentWordIndex(prev => prev + 1);
-      setTotalWordsInSession(prev => prev + 1);
-    } else {
-      const nextAyahIndex = currentAyahIndex + 1;
-      
-      if (nextAyahIndex < ayahs.length) {
-          setCurrentAyahIndex(nextAyahIndex);
-          setCurrentWordIndex(0);
-          
-          // If the next ayah is a real verse, count its first word.
-          // If it's a preamble, the user will click "Start Practice" which will count the word.
-          if (ayahs[nextAyahIndex].number !== 0) {
+        const nextWordIndex = currentWordIndex + 1;
+        setCurrentWordIndex(nextWordIndex);
+        if (isAtFurthestProgress) {
+            setFurthestWordIndex(nextWordIndex);
             setTotalWordsInSession(prev => prev + 1);
-          }
-      } else {
-          endMemorizationSession();
-      }
+        }
+    } else {
+        const nextAyahIndex = currentAyahIndex + 1;
+        if (nextAyahIndex < ayahs.length) {
+            setCurrentAyahIndex(nextAyahIndex);
+            setCurrentWordIndex(0);
+            if (isAtFurthestProgress) {
+                setFurthestAyahIndex(nextAyahIndex);
+                setFurthestWordIndex(0);
+                if (ayahs[nextAyahIndex].number !== 0) {
+                    setTotalWordsInSession(prev => prev + 1);
+                }
+            }
+        } else {
+            endMemorizationSession();
+        }
+    }
+  };
+  
+  const handlePreviousWord = () => {
+    if (currentAyahIndex === sessionStartIndex && currentWordIndex === 0) {
+        return;
+    }
+
+    if (currentWordIndex > 0) {
+        setCurrentWordIndex(prev => prev - 1);
+    } else {
+        const prevAyahIndex = currentAyahIndex - 1;
+        if (prevAyahIndex >= 0) {
+            const prevAyahWords = getWordsForAyah(ayahs[prevAyahIndex]);
+            setCurrentAyahIndex(prevAyahIndex);
+            setCurrentWordIndex(prevAyahWords.length - 1);
+        }
     }
   };
 
   const addMistake = (type: 'forgot' | 'tajwid') => {
-    if (mistakeMarkedForWord) return;
+    const isAtFurthestProgress = currentAyahIndex === furthestAyahIndex && currentWordIndex === furthestWordIndex;
+    if (mistakeMarkedForWord || !isAtFurthestProgress) return;
+
     const newMistake: Mistake = {
       ayahIndex: currentAyahIndex,
       wordIndex: currentWordIndex,
@@ -232,6 +279,9 @@ const MemorizationView: React.FC<MemorizationViewProps> = ({ ayahs, startAyah, j
     setMistakes([]);
     const shouldShowStartScreen = initialIndex === 0 && hasPreamble;
     setSessionStarted(!shouldShowStartScreen);
+    setFurthestAyahIndex(initialIndex);
+    setFurthestWordIndex(0);
+    setSessionStartIndex(initialIndex);
     setTotalWordsInSession(shouldShowStartScreen ? 0 : 1);
   };
 
@@ -251,6 +301,10 @@ const MemorizationView: React.FC<MemorizationViewProps> = ({ ayahs, startAyah, j
 
   const isPreambleScreen = !sessionStarted || (currentAyah && currentAyah.number === 0);
   const sessionTitle = isJuzMode ? `Juz ${juzNumber}` : ayahs.find(a => a.number !== 0)?.surah.englishName;
+  
+  const isAtFurthestProgress = currentAyahIndex === furthestAyahIndex && currentWordIndex === furthestWordIndex;
+  const canMarkMistake = isAtFurthestProgress && !mistakeMarkedForWord;
+  const isAtSessionStart = currentAyahIndex === sessionStartIndex && currentWordIndex === 0;
 
   return (
     <div className="flex flex-col h-screen">
@@ -354,17 +408,24 @@ const MemorizationView: React.FC<MemorizationViewProps> = ({ ayahs, startAyah, j
              </div>
          ) : (
             <>
-                <div className="flex-shrink-0 grid grid-cols-3 gap-2 md:gap-4 p-4 bg-gray-100 dark:bg-dark-bg border-t-2 border-gray-200 dark:border-gray-800 shadow-retro-inner">
+                <div className="flex-shrink-0 grid grid-cols-4 gap-2 md:gap-4 p-4 bg-gray-100 dark:bg-dark-bg border-t-2 border-gray-200 dark:border-gray-800 shadow-retro-inner">
+                     <button 
+                        onClick={handlePreviousWord}
+                        disabled={isAtSessionStart}
+                        className="p-3 text-base font-semibold rounded-lg border border-gray-400 bg-gradient-to-b from-gray-100 to-gray-200 text-gray-700 dark:from-gray-600 dark:to-gray-700 dark:text-gray-200 dark:border-gray-500 shadow-retro-md hover:shadow-retro-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
+                    >
+                        {t('previousWord')}
+                    </button>
                     <button 
                         onClick={() => addMistake('forgot')}
-                        disabled={mistakeMarkedForWord}
+                        disabled={!canMarkMistake}
                         className="p-3 text-base font-semibold rounded-lg border border-red-700 bg-gradient-to-b from-red-300 to-red-500 text-white shadow-retro-md hover:shadow-retro-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
                     >
                         🔴 {t('forgot')}
                     </button>
                     <button 
                         onClick={() => addMistake('tajwid')}
-                        disabled={mistakeMarkedForWord}
+                        disabled={!canMarkMistake}
                         className="p-3 text-base font-semibold rounded-lg border border-yellow-600 bg-gradient-to-b from-yellow-300 to-yellow-500 text-white shadow-retro-md hover:shadow-retro-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
                     >
                         🟡 {t('mistake')}
