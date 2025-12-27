@@ -1,12 +1,20 @@
-# Al-Qur’an Self Recitation
+<div align="center">
+<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+</div>
 
-✨ A clean Qur’an memorization and practice app, deployed on Vercel for fast, free access.  
-[🌐 Live App](https://al-qur-an-self-recitation.vercel.app/)
+# Run and deploy your AI Studio app
 
----
+This contains everything you need to run your app locally.
 
-## 🚀 Deployment
+View your app in AI Studio: https://ai.studio/apps/drive/1fjl86uRuLT_1Hmv3XG4E2XEJA47FLC71
 
-Deployed **for free on Vercel**, auto-updates with every `git push` to `main`.
+## Run Locally
 
----
+**Prerequisites:**  Node.js
+
+
+1. Install dependencies:
+   `npm install`
+2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+3. Run the app:
+   `npm run dev`

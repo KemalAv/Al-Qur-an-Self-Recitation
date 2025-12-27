@@ -285,8 +285,10 @@ const AppContent: React.FC = () => {
                     <AnalysisView
                         title={selectedSurah ? selectedSurah.englishName : `Juz ${selectedJuz!.number}`}
                         ayahs={ayahsData}
-                        mistakes={analysisStats.mistakes}
+                        stats={analysisStats}
                         onBack={handleBackToMenu}
+                        isJuzMode={!!selectedJuz}
+                        startAyahNumber={startAyah}
                     />
                 );
             case 'LIST_VIEW':
