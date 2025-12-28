@@ -112,9 +112,6 @@ const MemorizationView: React.FC<MemorizationViewProps> = ({ ayahs, startAyah, j
 
   const forgotCount = useMemo(() => mistakes.filter(m => m.type === 'forgot').length, [mistakes]);
   const tajwidCount = useMemo(() => mistakes.filter(m => m.type === 'tajwid').length, [mistakes]);
-  const mistakeMarkedForWord = useMemo(() => 
-      mistakes.some(m => m.ayahIndex === currentAyahIndex && m.wordIndex === currentWordIndex), 
-  [mistakes, currentAyahIndex, currentWordIndex]);
 
   const currentAyah = ayahs[currentAyahIndex];
   
@@ -238,15 +235,33 @@ const MemorizationView: React.FC<MemorizationViewProps> = ({ ayahs, startAyah, j
     }
   };
 
-  const addMistake = (type: 'forgot' | 'tajwid') => {
-    if (mistakeMarkedForWord) return;
+  const handleMistake = (type: 'forgot' | 'tajwid') => {
+    setMistakes(prevMistakes => {
+        const existingMistakeIndex = prevMistakes.findIndex(
+            m => m.ayahIndex === currentAyahIndex && m.wordIndex === currentWordIndex
+        );
 
-    const newMistake: Mistake = {
-      ayahIndex: currentAyahIndex,
-      wordIndex: currentWordIndex,
-      type: type,
-    };
-    setMistakes(prev => [...prev, newMistake]);
+        if (existingMistakeIndex !== -1) {
+            const existingMistake = prevMistakes[existingMistakeIndex];
+            if (existingMistake.type === type) {
+                // Same type clicked again, remove it (undo)
+                return prevMistakes.filter((_, index) => index !== existingMistakeIndex);
+            } else {
+                // Different type clicked, change it
+                const updatedMistakes = [...prevMistakes];
+                updatedMistakes[existingMistakeIndex] = { ...existingMistake, type: type };
+                return updatedMistakes;
+            }
+        } else {
+            // No mistake exists, add a new one
+            const newMistake: Mistake = {
+                ayahIndex: currentAyahIndex,
+                wordIndex: currentWordIndex,
+                type: type,
+            };
+            return [...prevMistakes, newMistake];
+        }
+    });
   };
 
   const endMemorizationSession = () => {
@@ -301,7 +316,6 @@ const MemorizationView: React.FC<MemorizationViewProps> = ({ ayahs, startAyah, j
   const isPreambleScreen = !sessionStarted || (currentAyah && currentAyah.number === 0);
   const sessionTitle = isJuzMode ? `Juz ${juzNumber}` : ayahs.find(a => a.number !== 0)?.surah.englishName;
   
-  const canMarkMistake = !mistakeMarkedForWord;
   const isAtSessionStart = currentAyahIndex === sessionStartIndex && currentWordIndex === 0;
 
   return (
@@ -415,16 +429,14 @@ const MemorizationView: React.FC<MemorizationViewProps> = ({ ayahs, startAyah, j
                         {t('previousWord')}
                     </button>
                     <button 
-                        onClick={() => addMistake('forgot')}
-                        disabled={!canMarkMistake}
-                        className="p-3 text-base font-semibold rounded-lg border border-red-700 bg-gradient-to-b from-red-300 to-red-500 text-white shadow-retro-md hover:shadow-retro-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
+                        onClick={() => handleMistake('forgot')}
+                        className="p-3 text-base font-semibold rounded-lg border border-red-700 bg-gradient-to-b from-red-300 to-red-500 text-white shadow-retro-md hover:shadow-retro-lg transition-all transform hover:scale-105"
                     >
                         🔴 {t('forgot')}
                     </button>
                     <button 
-                        onClick={() => addMistake('tajwid')}
-                        disabled={!canMarkMistake}
-                        className="p-3 text-base font-semibold rounded-lg border border-yellow-600 bg-gradient-to-b from-yellow-300 to-yellow-500 text-white shadow-retro-md hover:shadow-retro-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
+                        onClick={() => handleMistake('tajwid')}
+                        className="p-3 text-base font-semibold rounded-lg border border-yellow-600 bg-gradient-to-b from-yellow-300 to-yellow-500 text-white shadow-retro-md hover:shadow-retro-lg transition-all transform hover:scale-105"
                     >
                         🟡 {t('mistake')}
                     </button>
@@ -445,12 +457,9 @@ const MemorizationView: React.FC<MemorizationViewProps> = ({ ayahs, startAyah, j
       </footer>
 
       {showSummary && sessionStats && (
+        // FIX: Removed unused props `ayahs`, `sessionTitle`, `isJuzMode`, `startAyahNumber` from MemorizationSummaryModal call
         <MemorizationSummaryModal 
             stats={sessionStats}
-            ayahs={ayahs}
-            sessionTitle={sessionTitle ?? ''}
-            isJuzMode={isJuzMode}
-            startAyahNumber={startAyah}
             onRetry={resetSession}
             onAnalyze={() => onStartAnalysis(sessionStats)}
         />
