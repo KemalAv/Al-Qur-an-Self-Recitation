@@ -239,8 +239,7 @@ const MemorizationView: React.FC<MemorizationViewProps> = ({ ayahs, startAyah, j
   };
 
   const addMistake = (type: 'forgot' | 'tajwid') => {
-    const isAtFurthestProgress = currentAyahIndex === furthestAyahIndex && currentWordIndex === furthestWordIndex;
-    if (mistakeMarkedForWord || !isAtFurthestProgress) return;
+    if (mistakeMarkedForWord) return;
 
     const newMistake: Mistake = {
       ayahIndex: currentAyahIndex,
@@ -302,8 +301,7 @@ const MemorizationView: React.FC<MemorizationViewProps> = ({ ayahs, startAyah, j
   const isPreambleScreen = !sessionStarted || (currentAyah && currentAyah.number === 0);
   const sessionTitle = isJuzMode ? `Juz ${juzNumber}` : ayahs.find(a => a.number !== 0)?.surah.englishName;
   
-  const isAtFurthestProgress = currentAyahIndex === furthestAyahIndex && currentWordIndex === furthestWordIndex;
-  const canMarkMistake = isAtFurthestProgress && !mistakeMarkedForWord;
+  const canMarkMistake = !mistakeMarkedForWord;
   const isAtSessionStart = currentAyahIndex === sessionStartIndex && currentWordIndex === 0;
 
   return (
