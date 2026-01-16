@@ -44,7 +44,7 @@ const MemorizationSummaryModal: React.FC<MemorizationSummaryModalProps> = ({ sta
     if (accuracy >= 90) return 'B';
     if (accuracy >= 82.5) return 'C';
     if (accuracy >= 75) return 'D';
-    return 'E';
+    return 'F';
   };
 
   const getRankColor = (rank: string) => {
