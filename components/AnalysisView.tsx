@@ -69,7 +69,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ title, ayahs, stats, onBack
         if (accuracy >= 90) return 'B';
         if (accuracy >= 82.5) return 'C';
         if (accuracy >= 75) return 'D';
-        return 'E';
+        return 'F';
     };
 
     const score = useMemo(() => calculateScore(stats), [stats]);
