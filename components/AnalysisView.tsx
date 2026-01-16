@@ -60,6 +60,18 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ title, ayahs, stats, onBack
       return Math.round(rawScore);
     };
 
+    const getRank = (accuracy: number) => {
+        if (accuracy === 100) return 'X';
+        if (accuracy >= 99.5) return 'SSS';
+        if (accuracy >= 99) return 'SS';
+        if (accuracy >= 98) return 'S';
+        if (accuracy >= 95) return 'A';
+        if (accuracy >= 90) return 'B';
+        if (accuracy >= 82.5) return 'C';
+        if (accuracy >= 75) return 'D';
+        return 'E';
+    };
+
     const score = useMemo(() => calculateScore(stats), [stats]);
   
     useEffect(() => {
@@ -158,7 +170,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ title, ayahs, stats, onBack
           mistakesHeight += (lines * 35) + 20;
         }
 
-        const baseHeight = 580;
+        const baseHeight = 720; // Increased to accommodate Rank
         const totalHeight = baseHeight + mistakesHeight;
 
         canvas.width = canvasWidth * scale;
@@ -205,7 +217,27 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ title, ayahs, stats, onBack
         ctx.font = 'bold 80px Inter, sans-serif';
         ctx.fillStyle = '#3B82F6';
         ctx.fillText(score.toString(), canvasWidth/2, currentY);
-        currentY += 40;
+
+        // Draw Rank
+        currentY += 30;
+        const rank = getRank(stats.accuracy);
+        let rankColor = '#6B7280'; // Default gray
+        if (rank === 'X') rankColor = '#9333EA'; // Purple
+        else if (rank.includes('S')) rankColor = '#F59E0B'; // Yellow/Gold
+        else if (rank === 'A') rankColor = '#22C55E'; // Green
+        else if (rank === 'B') rankColor = '#3B82F6'; // Blue
+        else if (rank === 'C') rankColor = '#F97316'; // Orange
+        else if (rank === 'D') rankColor = '#EF4444'; // Red
+
+        ctx.font = 'bold 16px Inter, sans-serif';
+        ctx.fillStyle = isDark ? '#9CA3AF' : '#6B7280';
+        ctx.fillText(t('rankLabel').toUpperCase(), canvasWidth / 2, currentY);
+        currentY += 50;
+        ctx.font = 'bold 50px Inter, sans-serif';
+        ctx.fillStyle = rankColor;
+        ctx.fillText(rank, canvasWidth / 2, currentY);
+
+        currentY += 50;
         ctx.font = 'bold 22px Inter, sans-serif';
         ctx.fillStyle = stats.accuracy > 80 ? '#22C55E' : '#F59E0B';
         ctx.fillText(`${stats.accuracy}% ${t('accuracyLabel')}`, canvasWidth / 2, currentY);
