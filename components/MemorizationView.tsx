@@ -1,14 +1,14 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Surah, Ayah, MemorizationStats, Mistake } from '../types';
-import { BackIcon, ReadIcon, SettingsIcon, SpeakerIcon, PauseIcon } from './icons';
+import { BackIcon, ReadIcon, SettingsIcon, SpeakerIcon, PauseIcon, RewindIcon } from './icons';
 import MemorizationSummaryModal from './MemorizationSummaryModal';
 import DisplaySettingsModal from './DisplaySettingsModal';
 import { useDisplaySettings } from '../hooks/useTheme';
 import { useLocalization } from '../hooks/useLocalization';
 
 const ARABIC_FONT_SIZES = ['text-xl md:text-2xl', 'text-2xl md:text-3xl', 'text-3xl md:text-4xl', 'text-4xl md:text-5xl', 'text-5xl md:text-6xl', 'text-6xl md:text-7xl'];
-const TRANSLATION_FONT_SIZES = ['text-xs', 'text-sm', 'text-base', 'text-lg', 'text-xl', 'text-2xl'];
 const TRANSLITERATION_FONT_SIZES = ['text-[10px]', 'text-xs', 'text-sm', 'text-base', 'text-lg', 'text-xl'];
+const TRANSLATION_FONT_SIZES = ['text-xs', 'text-sm', 'text-base', 'text-lg', 'text-xl', 'text-2xl'];
 
 
 // Function to remove Arabic waqf (pause) marks and other annotations, including lam-alif ligatures
@@ -235,6 +235,20 @@ const MemorizationView: React.FC<MemorizationViewProps> = ({ ayahs, startAyah, j
     }
   };
 
+  const handlePreviousAyah = () => {
+    // Logic: If we have progressed in the current ayah, restart it.
+    if (currentWordIndex > 0) {
+        setCurrentWordIndex(0);
+        return;
+    }
+
+    // If we are at the start of the current ayah, go to the previous ayah.
+    if (currentAyahIndex > sessionStartIndex) {
+        setCurrentAyahIndex(prev => prev - 1);
+        setCurrentWordIndex(0);
+    }
+  };
+
   const handleMistake = (type: 'forgot' | 'tajwid') => {
     setMistakes(prevMistakes => {
         const existingMistakeIndex = prevMistakes.findIndex(
@@ -421,13 +435,23 @@ const MemorizationView: React.FC<MemorizationViewProps> = ({ ayahs, startAyah, j
          ) : (
             <>
                 <div className="flex-shrink-0 grid grid-cols-4 gap-2 md:gap-4 p-4 bg-gray-100 dark:bg-dark-bg border-t-2 border-gray-200 dark:border-gray-800 shadow-retro-inner">
-                     <button 
-                        onClick={handlePreviousWord}
-                        disabled={isAtSessionStart}
-                        className="p-3 text-base font-semibold rounded-lg border border-gray-400 bg-gradient-to-b from-gray-100 to-gray-200 text-gray-700 dark:from-gray-600 dark:to-gray-700 dark:text-gray-200 dark:border-gray-500 shadow-retro-md hover:shadow-retro-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
-                    >
-                        {t('previousWord')}
-                    </button>
+                    <div className="flex gap-1">
+                        <button 
+                            onClick={handlePreviousWord}
+                            disabled={isAtSessionStart}
+                            className="w-[80%] p-3 text-base font-semibold rounded-l-lg rounded-r-none border border-gray-400 bg-gradient-to-b from-gray-100 to-gray-200 text-gray-700 dark:from-gray-600 dark:to-gray-700 dark:text-gray-200 dark:border-gray-500 shadow-retro-md hover:shadow-retro-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95 hover:z-10"
+                        >
+                            {t('previousWord')}
+                        </button>
+                        <button 
+                            onClick={handlePreviousAyah}
+                            disabled={isAtSessionStart}
+                            className="w-[20%] p-3 flex items-center justify-center rounded-r-lg rounded-l-none border-t border-b border-r border-gray-400 bg-gradient-to-b from-gray-100 to-gray-200 text-gray-700 dark:from-gray-600 dark:to-gray-700 dark:text-gray-200 dark:border-gray-500 shadow-retro-md hover:shadow-retro-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95 hover:z-10"
+                            title={t('previousAyah')}
+                        >
+                            <RewindIcon className="w-5 h-5" />
+                        </button>
+                    </div>
                     <button 
                         onClick={() => handleMistake('forgot')}
                         className="p-3 text-base font-semibold rounded-lg border border-red-700 bg-gradient-to-b from-red-300 to-red-500 text-white shadow-retro-md hover:shadow-retro-lg transition-all transform hover:scale-105"
@@ -457,7 +481,6 @@ const MemorizationView: React.FC<MemorizationViewProps> = ({ ayahs, startAyah, j
       </footer>
 
       {showSummary && sessionStats && (
-        // FIX: Removed unused props `ayahs`, `sessionTitle`, `isJuzMode`, `startAyahNumber` from MemorizationSummaryModal call
         <MemorizationSummaryModal 
             stats={sessionStats}
             onRetry={resetSession}
